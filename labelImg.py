@@ -8,6 +8,7 @@ import shutil
 import sys
 import webbrowser as wb
 from functools import partial
+import time
 
 try:
     from PyQt5.QtGui import *
@@ -187,6 +188,7 @@ class MainWindow(QMainWindow, WindowMixin):
         self.canvas = Canvas(parent=self)
         self.canvas.zoomRequest.connect(self.zoom_request)
         self.canvas.lightRequest.connect(self.light_request)
+        self.canvas.focusRequest.connect(self.focus_request)
         self.canvas.set_drawing_shape_to_square(settings.get(SETTING_DRAW_SQUARE, False))
 
         scroll = QScrollArea()
@@ -271,12 +273,12 @@ class MainWindow(QMainWindow, WindowMixin):
                         'Ctrl+L', 'color_line', get_str('boxLineColorDetail'))
 
         create_mode = action(get_str('crtBox'), self.set_create_mode,
-                             'w', 'new', get_str('crtBoxDetail'), enabled=False)
+                             'n', 'new', get_str('crtBoxDetail'), enabled=False)
         edit_mode = action(get_str('editBox'), self.set_edit_mode,
                            'Ctrl+J', 'edit', get_str('editBoxDetail'), enabled=False)
 
         create = action(get_str('crtBox'), self.create_shape,
-                        'w', 'new', get_str('crtBoxDetail'), enabled=False)
+                        'n', 'new', get_str('crtBoxDetail'), enabled=False)
         delete = action(get_str('delBox'), self.delete_selected_shape,
                         'Delete', 'delete', get_str('delBoxDetail'), enabled=False)
         copy = action(get_str('dupBox'), self.copy_selected_shape,
@@ -473,6 +475,10 @@ class MainWindow(QMainWindow, WindowMixin):
         self.fit_window = False
         # Add Chris
         self.difficult = False
+        # init thresholds for UI
+        self.is_anno_focused = False
+        self.last_focus_request = time.time()
+        self.focus_press_interval = 0.3 # seconds
 
         # Fix the compatible issue for qt4 and qt5. Convert the QStringList to python list
         if settings.get(SETTING_RECENT_FILES):
@@ -536,17 +542,19 @@ class MainWindow(QMainWindow, WindowMixin):
         self.statusBar().addPermanentWidget(self.label_coordinates)
 
         # Open Dir if default file
-        if self.file_path and os.path.isdir(self.file_path):
-            self.open_dir_dialog(dir_path=self.file_path, silent=True)
+        # if self.file_path and os.path.isdir(self.file_path):
+        #     self.open_dir_dialog(dir_path=self.file_path, silent=True)
 
     def keyReleaseEvent(self, event):
         if event.key() == Qt.Key_Control:
-            self.canvas.set_drawing_shape_to_square(False)
+            # self.canvas.set_drawing_shape_to_square(False)
+            self.canvas.onKeyRelease(event)
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Control:
             # Draw rectangle if Ctrl is pressed
-            self.canvas.set_drawing_shape_to_square(True)
+            # self.canvas.set_drawing_shape_to_square(True)
+          self.canvas.onKeyPress(event)
 
     # Support Functions #
     def set_format(self, save_format):
@@ -998,6 +1006,55 @@ class MainWindow(QMainWindow, WindowMixin):
         units = - delta / (8 * 15)
         bar = self.scroll_bars[orientation]
         bar.setValue(int(bar.value() + bar.singleStep() * units))
+        self.is_anno_focused = False
+
+
+    def focus_request(self, unfocus=False):
+      """Zoom and scroll to absolute position"""
+
+      # # check for double press and fit width
+      # et = time.time() - self.last_focus_request
+      # self.last_focus_request = time.time()
+      # if et < self.focus_press_interval:
+      #   self.set_fit_width()
+      #   return
+      if self.is_anno_focused or unfocus:
+          self.set_fit_window()
+          return
+
+      # shape size
+      pts = [[p.x(), p.y()] for p in self.canvas.selected_shape.points]
+      shape_w, shape_h = int((pts[1][0] - pts[0][0])), int((pts[3][1] - pts[0][1]))
+      scroll_area_w, scroll_area_h = self.scroll_area.width(), self.scroll_area.height()
+      
+      # set zoom to shape size with margin
+      margin_fac = 0.5  # min percentage of shape size on each side
+      sw = scroll_area_w / ((1 + 2 * margin_fac) * shape_w)
+      sh = scroll_area_h / ((1 + 2 * margin_fac) * shape_h)
+      scale = min(sw, sh)
+      self.set_zoom(int(100 * scale))
+      # NB: get actual widget value (if max/min exceeded)
+      scale = self.zoom_widget.value() / 100.0
+
+      # center selected shape by setting scroll bars
+      canvas_w, canvas_h = self.canvas.size().width(), self.canvas.size().height()
+      pts_scaled = [[p[0] * scale, p[1] * scale] for p in pts]
+      shape_w, shape_h = scale * shape_w, scale * shape_h
+
+      # recreate margins with actual scale, set scroll bars
+      h_bar = self.scroll_bars[Qt.Horizontal]
+      v_bar = self.scroll_bars[Qt.Vertical]
+      margin_x, margin_y = (scroll_area_w - shape_w)/2, (scroll_area_h - shape_h)/2
+      view_x, view_y = pts_scaled[0][0] - margin_x, pts_scaled[0][1] - margin_y
+      view_x = max(0, min(canvas_w - scroll_area_w, view_x))
+      view_y = max(0, min(canvas_h - scroll_area_h, view_y))
+      btn_w = h_bar.size().height() + 2  # add 2 for 1px GUI border
+      h_scroll_val = view_x - btn_w
+      v_scroll_val = view_y - btn_w
+      h_bar.setValue(h_scroll_val)
+      v_bar.setValue(v_scroll_val)
+      self.is_anno_focused = True
+
 
     def set_zoom(self, value):
         self.actions.fitWidth.setChecked(False)
@@ -1020,20 +1077,20 @@ class MainWindow(QMainWindow, WindowMixin):
         h_bar_max = h_bar.maximum()
         v_bar_max = v_bar.maximum()
 
+        w,h = self.scroll_area.width(), self.scroll_area.height()
+
+        tools_offset_x = self.tools.pos().x() + self.tools.size().width()
+        tools_offset_y = self.tools.pos().y() + self.tools.size().height()
+
         # get the cursor position and canvas size
         # calculate the desired movement from 0 to 1
         # where 0 = move left
         #       1 = move right
         # up and down analogous
-        cursor = QCursor()
-        pos = cursor.pos()
-        relative_pos = QWidget.mapFromGlobal(self, pos)
-
-        cursor_x = relative_pos.x()
-        cursor_y = relative_pos.y()
-
-        w = self.scroll_area.width()
-        h = self.scroll_area.height()
+        cursor_pos_rel = QWidget.mapFromGlobal(self, QCursor().pos())
+        adj_x, adj_y = (-tools_offset_x/2, -tools_offset_y/2)
+        adj_x, adj_y = (0,0)
+        cursor_x,cursor_y = (cursor_pos_rel.x() + adj_x, cursor_pos_rel.y() + adj_y)
 
         # the scaling from 0 to 1 has some padding
         # you don't have to hit the very leftmost pixel for a maximum-left movement
@@ -1179,6 +1236,7 @@ class MainWindow(QMainWindow, WindowMixin):
 
     def show_bounding_box_from_annotation_file(self, file_path):
         if self.default_save_dir is not None:
+            print('show', self.default_save_dir)
             basename = os.path.basename(os.path.splitext(file_path)[0])
             xml_path = os.path.join(self.default_save_dir, basename + XML_EXT)
             txt_path = os.path.join(self.default_save_dir, basename + TXT_EXT)
@@ -1222,6 +1280,7 @@ class MainWindow(QMainWindow, WindowMixin):
         self.canvas.update()
 
     def adjust_scale(self, initial=False):
+        self.is_anno_focused = False  # unset
         value = self.scalers[self.FIT_WINDOW if initial else self.zoom_mode]()
         self.zoom_widget.setValue(int(100 * value))
 
@@ -1341,6 +1400,7 @@ class MainWindow(QMainWindow, WindowMixin):
         
 
     def open_dir_dialog(self, _value=False, dir_path=None, silent=False):
+        print('open dir dialog')
         if not self.may_continue():
             return
 

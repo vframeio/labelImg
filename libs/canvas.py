@@ -25,6 +25,7 @@ class Canvas(QWidget):
     zoomRequest = pyqtSignal(int)
     lightRequest = pyqtSignal(int)
     scrollRequest = pyqtSignal(int, int)
+    focusRequest = pyqtSignal(bool)
     newShape = pyqtSignal()
     selectionChanged = pyqtSignal(bool)
     shapeMoved = pyqtSignal()
@@ -65,6 +66,8 @@ class Canvas(QWidget):
         self.setFocusPolicy(Qt.WheelFocus)
         self.verified = False
         self.draw_square = False
+        # user io mgmt
+        self.keys_down = []
 
         # initialisation for panning
         self.pan_initial_pos = QPoint()
@@ -538,7 +541,7 @@ class Canvas(QWidget):
             p.drawRect(int(left_top.x()), int(left_top.y()), int(rect_width), int(rect_height))
 
         if self.drawing() and not self.prev_point.isNull() and not self.out_of_pixmap(self.prev_point):
-            p.setPen(QColor(0, 0, 0))
+            p.setPen(QColor(0, 255, 0))
             p.drawLine(int(self.prev_point.x()), 0, int(self.prev_point.x()), int(self.pixmap.height()))
             p.drawLine(0, int(self.prev_point.y()), int(self.pixmap.width()), int(self.prev_point.y()))
 
@@ -626,8 +629,22 @@ class Canvas(QWidget):
             h_delta and self.scrollRequest.emit(h_delta, Qt.Horizontal)
         ev.accept()
 
+    def onKeyPress(self, k):
+        if k in self.keys_down:
+            self.keys_down.remove(k)
+
+    def onKeyRelease(self, k):
+        if k in self.keys_down:
+            self.keys_down.remove(k)
+
     def keyPressEvent(self, ev):
         key = ev.key()
+        self.onKeyPress(key)
+        self.keys_down.append(key)
+        is_shift = any([k == Qt.Key_Shift for k in self.keys_down])
+        is_ctrl = any([k == Qt.Key_Control for k in self.keys_down])
+        C = self.current
+        delta = (0,0)
         if key == Qt.Key_Escape and self.current:
             print('ESC press')
             self.current = None
@@ -636,40 +653,84 @@ class Canvas(QWidget):
         elif key == Qt.Key_Return and self.can_close_shape():
             self.finalise()
         elif key == Qt.Key_Left and self.selected_shape:
-            self.move_one_pixel('Left')
+            # move anno left
+            delta = (-1,0)
         elif key == Qt.Key_Right and self.selected_shape:
-            self.move_one_pixel('Right')
+            # move anno right
+            delta = (1,0)
         elif key == Qt.Key_Up and self.selected_shape:
-            self.move_one_pixel('Up')
+            # move anno down
+            delta = (0,-1)
         elif key == Qt.Key_Down and self.selected_shape:
-            self.move_one_pixel('Down')
+            # move anno down
+            delta = (0,1)
+        elif key == Qt.Key_F and self.selected_shape:
+            # focus/zoom to current image
+            self.focusRequest.emit(False)
+        elif key == Qt.Key_E:
+            # next
+            idx = -1
+            if self.selected_shape is not None:
+                for i, shape in enumerate(self.shapes):
+                    if shape.selected:
+                        idx = min(len(self.shapes) - 1, i + 1) % len(self.shapes)
+                        break
+            elif len(self.shapes):
+                idx = 0
+            if idx > -1:
+                self.select_shape(self.shapes[idx])
+                self.focusRequest.emit(True)
+        elif key == Qt.Key_W:
+            # prev
+            idx = -1
+            if self.selected_shape is not None:
+                for i, shape in enumerate(self.shapes):
+                    if shape.selected:
+                        idx = max(0, (i - 1)) % len(self.shapes)
+                        break
+            elif len(self.shapes):
+                idx = 0
+            if idx > -1:
+                self.select_shape(self.shapes[idx])
+                self.focusRequest.emit(True)
+        elif key == Qt.Key_R:
+            # cycle
+            idx = -1
+            if self.selected_shape is not None:
+                for i, shape in enumerate(self.shapes):
+                    if shape.selected:
+                        idx = (i + 1) % len(self.shapes)
+                        break
+            elif len(self.shapes):
+                idx = 0
+            if idx > -1:
+                self.select_shape(self.shapes[idx])
+                self.focusRequest.emit(True)
+        if sum(delta) != 0:
+            self.move_one_pixel(delta, is_shift=is_shift, is_ctrl=is_ctrl)
 
-    def move_one_pixel(self, direction):
-        # print(self.selectedShape.points)
-        if direction == 'Left' and not self.move_out_of_bound(QPointF(-1.0, 0)):
-            # print("move Left one pixel")
-            self.selected_shape.points[0] += QPointF(-1.0, 0)
-            self.selected_shape.points[1] += QPointF(-1.0, 0)
-            self.selected_shape.points[2] += QPointF(-1.0, 0)
-            self.selected_shape.points[3] += QPointF(-1.0, 0)
-        elif direction == 'Right' and not self.move_out_of_bound(QPointF(1.0, 0)):
-            # print("move Right one pixel")
-            self.selected_shape.points[0] += QPointF(1.0, 0)
-            self.selected_shape.points[1] += QPointF(1.0, 0)
-            self.selected_shape.points[2] += QPointF(1.0, 0)
-            self.selected_shape.points[3] += QPointF(1.0, 0)
-        elif direction == 'Up' and not self.move_out_of_bound(QPointF(0, -1.0)):
-            # print("move Up one pixel")
-            self.selected_shape.points[0] += QPointF(0, -1.0)
-            self.selected_shape.points[1] += QPointF(0, -1.0)
-            self.selected_shape.points[2] += QPointF(0, -1.0)
-            self.selected_shape.points[3] += QPointF(0, -1.0)
-        elif direction == 'Down' and not self.move_out_of_bound(QPointF(0, 1.0)):
-            # print("move Down one pixel")
-            self.selected_shape.points[0] += QPointF(0, 1.0)
-            self.selected_shape.points[1] += QPointF(0, 1.0)
-            self.selected_shape.points[2] += QPointF(0, 1.0)
-            self.selected_shape.points[3] += QPointF(0, 1.0)
+    def keyReleaseEvent(self, ev):
+        self.onKeyPress(ev.key())
+
+    def move_one_pixel(self, delta, is_shift=False, is_ctrl=False, is_alt=False):
+        # create proposed shape, then fit within bounds
+        w, h = self.pixmap.width(), self.pixmap.height()
+        pt_tl, pt_tr, pt_br, pt_bl = self.selected_shape.points
+        delta = [5 * d for d in delta] if (is_ctrl or is_alt) else delta
+        if is_shift:
+            # move right/bottom edges
+            x = max(0, min(pt_tr.x() + delta[0], w))
+            pt_tr = QPointF(x, max(0, pt_tr.y()))
+            pt_br = QPointF(x, max(0, min(pt_br.y() + delta[1], h)))
+            pt_bl = QPointF(pt_bl.x(), max(0, min(pt_bl.y() + delta[1], h)))
+        else:
+            # move left/top edges
+            x = max(0, min(pt_tl.x() + delta[0], w))
+            pt_tl = QPointF(x, max(0, min(pt_tl.y() + delta[1], h)))
+            pt_bl = QPointF(x, pt_bl.y())
+            pt_tr = QPointF(pt_tr.x(), max(0, min(pt_tr.y() + delta[1], h)))
+
+        self.selected_shape.points = [pt_tl, pt_tr, pt_br, pt_bl]
         self.shapeMoved.emit()
         self.repaint()
 
