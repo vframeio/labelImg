@@ -12,57 +12,26 @@ Recent changes:
   + Add Brighten, Darken, Optimal Brightness functions
 
 Current known issues:
-- [] `QAction::event: Ambiguous shortcut overload: Ctrl++` when using keyboard shortcut to zoom in
+- [ ] `QAction::event: Ambiguous shortcut overload: Ctrl++` when using keyboard shortcut to zoom in
 
 TODO:
-- [] Update icons to FontAwesome
-- [] Add GUI keyboard shortcut modal in GUI to avoid opening browser
-- [] Rearrange all keyboard shortcuts
-- [] Improve keyboard accessibility for label selection when using `CTL+E`
-- [] Add numpad hotkeys for selecting < 11 annotations
-- [] Add status widget with current anno, N annos in cur image, cur anno index
-- [] Cleanup README: installation instructions, demo images, 
+- [ ] Update icons to FontAwesome
+- [ ] Add GUI keyboard shortcut modal in GUI to avoid opening browser
+- [ ] Rearrange all keyboard shortcuts
+- [ ] Improve keyboard accessibility for label selection when using `CTL+E`
+- [ ] Add numpad hotkeys for selecting < 11 annotations
+- [ ] Add status widget with current anno, N annos in cur image, cur anno index
+- [ ] Cleanup README: installation instructions, demo images, 
 
 
 ## About LabelImg
-
-[![image](https://img.shields.io/pypi/v/labelimg.svg)](https://pypi.python.org/pypi/labelimg)
-
-![GitHub Workflow Status](https://img.shields.io/github/workflow/status/tzutalin/labelImg/Package?style=for-the-badge)
-
-[![image](https://img.shields.io/badge/lang-en-blue.svg)](https://github.com/tzutalin/labelImg)
-
-[![image](https://img.shields.io/badge/lang-zh-green.svg)](https://github.com/tzutalin/labelImg/blob/master/readme/README.zh.md)
-
-[![image](https://img.shields.io/badge/lang-jp-green.svg)](https://github.com/tzutalin/labelImg/blob/master/readme/README.jp.md)
 
 LabelImg is a graphical image annotation tool. It is written in Python and uses Qt for its graphical interface. Annotations are saved as XML files in PASCAL VOC format, the format used by [ImageNet](http://www.image-net.org/). Besides, it also supports YOLO and CreateML formats.
 
 ![Demo Image](demo/demo3.jpg)
 
-![Demo Image](demo/demo.jpg)
 
-[Watch a demo video](https://youtu.be/p0nR2YsCY_U)
-
-## Installation
-
-
-Get from PyPI but only Python 3.0 or above
-
-This is the simplest (one-command) install method on modern Linux distributions such as Ubuntu and Fedora.
-
-```shell
-pip3 install labelImg
-labelImg
-labelImg [IMAGE_PATH] [PRE-DEFINED CLASS FILE]
-```
-
-## Build from source
-
-Linux/Ubuntu/Mac requires at least [Python 2.6](https://www.python.org/getit/) and has been tested with [PyQt4.8](https://www.riverbankcomputing.com/software/pyqt/intro). However,
-[Python 3 or above](https://www.python.org/getit/) and [PyQt5](https://pypi.org/project/PyQt5/) are strongly recommended.
-
-### Ubuntu Linux
+### Installation Ubuntu Linux
 
 Python 3 + Qt5
 
@@ -74,7 +43,7 @@ python3 labelImg.py
 python3 labelImg.py [IMAGE_PATH] [PRE-DEFINED CLASS FILE]
 ```
 
-### macOS
+### Installation macOS
 
 Python 3 + Qt5
 
@@ -107,7 +76,7 @@ rm -rf build dist; pipenv run python setup.py py2app -A; mv "dist/labelImg.app" 
 
 Note: The Last command gives you a nice .app file with a new SVG Icon in your /Applications folder. You can consider using the script: build-tools/build-for-macos.sh
 
-### Windows
+### Installation Windows
 
 Install [Python](https://www.python.org/downloads/windows/), [PyQt5](https://www.riverbankcomputing.com/software/pyqt/download5) and [install lxml](http://lxml.de/installation.html). Open cmd and go to the [labelImg](#labelimg) directory
 
