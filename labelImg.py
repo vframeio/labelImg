@@ -1754,11 +1754,15 @@ def get_main_app(argv=None):
     app.setWindowIcon(new_icon("app"))
     # Tzutalin 201705+: Accept extra agruments to change predefined class file
     argparser = argparse.ArgumentParser()
-    argparser.add_argument("image_dir", nargs="?")
-    argparser.add_argument("class_file",
-                           default=os.path.join(os.path.dirname(__file__), "data", "predefined_classes.txt"),
-                           nargs="?")
-    argparser.add_argument("save_dir", nargs="?")
+    argparser.add_argument('--images', 
+                            dest='image_dir')
+    argparser.add_argument('--classes',
+                            dest='class_file',
+                            default=os.path.join(os.path.dirname(__file__)), 
+                            # dest='data', 
+                            nargs='?')
+    argparser.add_argument('--annotations',
+                            dest='save_dir')
     args = argparser.parse_args(argv[1:])
 
     args.image_dir = args.image_dir and os.path.normpath(args.image_dir)
