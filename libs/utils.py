@@ -1,5 +1,6 @@
 from math import sqrt
 from libs.ustr import ustr
+from libs.constants import LABEL_NEGATIVE
 import hashlib
 import re
 import sys
@@ -80,7 +81,7 @@ def format_shortcut(text):
 
 
 def generate_color_by_text(text):
-    if text == 'negative':
+    if text == LABEL_NEGATIVE:
         r,g,b = (255, 0, 0)
     else:
         s = ustr(text)

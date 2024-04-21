@@ -10,13 +10,17 @@ except ImportError:
     from PyQt4.QtCore import *
 
 from libs.utils import distance
+from libs.constants import LABEL_NEGATIVE
 import sys
 
 DEFAULT_LINE_COLOR = QColor(0, 255, 0, 128)
-DEFAULT_FILL_COLOR = QColor(255, 0, 0, 128)
+DEFAULT_FILL_COLOR = QColor(0, 255, 0, 128)
 DEFAULT_SELECT_LINE_COLOR = QColor(0, 255, 0)
 DEFAULT_SELECT_FILL_COLOR = QColor(255, 255, 255, 5)
+DEFAULT_SELECT_LINE_COLOR_NEG = QColor(255, 0, 0)
+DEFAULT_SELECT_FILL_COLOR_NEG = QColor(255, 0, 0, 5)
 DEFAULT_VERTEX_FILL_COLOR = QColor(0, 255, 0, 255)
+DEFAULT_VERTEX_FILL_COLOR_NEG = QColor(255, 0, 0, 255)
 DEFAULT_HVERTEX_FILL_COLOR = QColor(255, 0, 0)
 
 
@@ -31,7 +35,10 @@ class Shape(object):
     fill_color = DEFAULT_FILL_COLOR
     select_line_color = DEFAULT_SELECT_LINE_COLOR
     select_fill_color = DEFAULT_SELECT_FILL_COLOR
+    select_line_color_neg = DEFAULT_SELECT_LINE_COLOR_NEG
+    select_fill_color_neg = DEFAULT_SELECT_FILL_COLOR_NEG
     vertex_fill_color = DEFAULT_VERTEX_FILL_COLOR
+    vertex_fill_color_neg = DEFAULT_VERTEX_FILL_COLOR_NEG
     h_vertex_fill_color = DEFAULT_HVERTEX_FILL_COLOR
     point_type = P_ROUND
     point_size = 16
@@ -86,7 +93,12 @@ class Shape(object):
 
     def paint(self, painter):
         if self.points:
-            color = self.select_line_color if self.selected else self.line_color
+            if self.label == LABEL_NEGATIVE:
+                color = self.select_line_color_neg
+                color_vertex = self.vertex_fill_color_neg
+            else:
+                color = self.select_line_color if self.selected else self.line_color
+                color_vertex = self.vertex_fill_color
             pen = QPen(color)
             # Try using integer sizes for smoother drawing(?)
             pen.setWidth(max(1, int(round(2.0 / self.scale))))
@@ -109,7 +121,7 @@ class Shape(object):
 
             painter.drawPath(line_path)
             painter.drawPath(vertex_path)
-            painter.fillPath(vertex_path, self.vertex_fill_color)
+            painter.fillPath(vertex_path, color_vertex)
 
             # Draw text at the top-left
             if self.paint_label:
