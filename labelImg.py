@@ -49,6 +49,7 @@ from libs.create_ml_io import CreateMLReader
 from libs.create_ml_io import JSON_EXT
 from libs.ustr import ustr
 from libs.hashableQListWidgetItem import HashableQListWidgetItem
+from libs.constants import LABEL_NEGATIVE
 
 __appname__ = "labelImg"
 
@@ -505,6 +506,14 @@ class MainWindow(QMainWindow, WindowMixin):
             get_str("originalsizeDetail"),
             enabled=False,
         )
+        mark_negative = action(
+            get_str("markNegative"),
+            self.mark_negative,
+            "x",
+            "marknegative",
+            get_str("markNegative"),
+            enabled=True,
+        )
         fit_window = action(
             get_str("fitWin"),
             self.set_fit_window,
@@ -651,6 +660,7 @@ class MainWindow(QMainWindow, WindowMixin):
             zoomTopRight=zoom_top_right,
             zoomBotRight=zoom_bot_right,
             zoomBotLeft=zoom_bot_left,
+            markNegative=mark_negative,
             fitWindow=fit_window,
             fitWidth=fit_width,
             zoomActions=zoom_actions,
@@ -737,8 +747,9 @@ class MainWindow(QMainWindow, WindowMixin):
                 zoom_org,
                 zoom_top_left,
                 zoom_top_right,
-                zoom_bot_right,
                 zoom_bot_left,
+                zoom_bot_right,
+                mark_negative,
                 None,
                 fit_window,
                 fit_width,
@@ -1134,6 +1145,14 @@ class MainWindow(QMainWindow, WindowMixin):
             item.setBackground(generate_color_by_text(text))
             self.set_dirty()
             self.update_combo_box()
+
+    def mark_negative(self):
+        print('mark_negative')
+        item = self.current_item()
+        item.setText(LABEL_NEGATIVE)
+        item.setBackground(generate_color_by_text(LABEL_NEGATIVE))
+        self.set_dirty()
+        self.update_combo_box()
 
     # Tzutalin 20160906 : Add file list and dock to move faster
     def file_item_double_clicked(self, item=None):
