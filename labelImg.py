@@ -473,6 +473,38 @@ class MainWindow(QMainWindow, WindowMixin):
             get_str("originalsizeDetail"),
             enabled=False,
         )
+        zoom_top_left = action(
+            get_str("originalsize"),
+            partial(self.set_zoom_quad, "tl"),
+            "4",
+            "zoom-quad",
+            get_str("originalsizeDetail"),
+            enabled=False,
+        )
+        zoom_top_right = action(
+            get_str("originalsize"),
+            partial(self.set_zoom_quad, "tr"),
+            "5",
+            "zoom-quad",
+            get_str("originalsizeDetail"),
+            enabled=False,
+        )
+        zoom_bot_left = action(
+            get_str("originalsize"),
+            partial(self.set_zoom_quad, "bl"),
+            "1",
+            "zoom-quad",
+            get_str("originalsizeDetail"),
+            enabled=False,
+        )
+        zoom_bot_right = action(
+            get_str("originalsize"),
+            partial(self.set_zoom_quad, "br"),
+            "2",
+            "zoom-quad",
+            get_str("originalsizeDetail"),
+            enabled=False,
+        )
         fit_window = action(
             get_str("fitWin"),
             self.set_fit_window,
@@ -497,6 +529,10 @@ class MainWindow(QMainWindow, WindowMixin):
             zoom_in,
             zoom_out,
             zoom_org,
+            zoom_top_left,
+            zoom_top_right,
+            zoom_bot_right,
+            zoom_bot_left,
             fit_window,
             fit_width,
         )
@@ -611,6 +647,10 @@ class MainWindow(QMainWindow, WindowMixin):
             zoomIn=zoom_in,
             zoomOut=zoom_out,
             zoomOrg=zoom_org,
+            zoomTopLeft=zoom_top_left,
+            zoomTopRight=zoom_top_right,
+            zoomBotRight=zoom_bot_right,
+            zoomBotLeft=zoom_bot_left,
             fitWindow=fit_window,
             fitWidth=fit_width,
             zoomActions=zoom_actions,
@@ -695,6 +735,10 @@ class MainWindow(QMainWindow, WindowMixin):
                 zoom_in,
                 zoom_out,
                 zoom_org,
+                zoom_top_left,
+                zoom_top_right,
+                zoom_bot_right,
+                zoom_bot_left,
                 None,
                 fit_window,
                 fit_width,
@@ -1411,6 +1455,20 @@ class MainWindow(QMainWindow, WindowMixin):
         h_bar.setValue(h_scroll_val)
         v_bar.setValue(v_scroll_val)
         self.is_anno_focused = True
+
+    def set_zoom_quad(self, direction, other):
+        canvas_w, canvas_h = self.canvas.size().width(), self.canvas.size().height()
+        if direction == "tl":
+            pos = (0, 0)
+        elif direction == "tr":
+            pos = (canvas_w // 2, 0)
+        elif direction == "br":
+            pos = (canvas_w // 2, canvas_h // 2)
+        elif direction == "bl":
+            pos = (0, canvas_h // 2)
+        self.scroll_bars[Qt.Horizontal].setValue(pos[0])
+        self.scroll_bars[Qt.Vertical].setValue(pos[1])
+        self.is_anno_focused = False
 
     def set_zoom(self, value):
         if value == 100 and self.zoom_widget.value() == 100:
