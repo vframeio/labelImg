@@ -80,11 +80,14 @@ def format_shortcut(text):
 
 
 def generate_color_by_text(text):
-    s = ustr(text)
-    hash_code = int(hashlib.sha256(s.encode('utf-8')).hexdigest(), 16)
-    r = int((hash_code / 255) % 255)
-    g = int((hash_code / 65025) % 255)
-    b = int((hash_code / 16581375) % 255)
+    if text == 'negative':
+        r,g,b = (255, 0, 0)
+    else:
+        s = ustr(text)
+        hash_code = int(hashlib.sha256(s.encode('utf-8')).hexdigest(), 16)
+        r = int((hash_code / 255) % 255)
+        g = int((hash_code / 65025) % 255)
+        b = int((hash_code / 16581375) % 255)
     return QColor(r, g, b, 100)
 
 
