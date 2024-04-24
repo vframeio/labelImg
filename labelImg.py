@@ -1147,8 +1147,10 @@ class MainWindow(QMainWindow, WindowMixin):
             self.update_combo_box()
 
     def mark_negative(self):
-        print('mark_negative')
+        """Mark current object as negative and updates colors"""
         item = self.current_item()
+        if not item:
+            return
         item.setText(LABEL_NEGATIVE)
         item.setBackground(generate_color_by_text(LABEL_NEGATIVE))
         self.set_dirty()
